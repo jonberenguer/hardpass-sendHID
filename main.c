@@ -8,6 +8,10 @@ parameters:
 	device file (e.g. /dev/hidg0)
 	keyboard layout (1=en_us, 2=de_at, 3=de_at-nodeadkeys)
 	unicode method: 1=gtk_holddown, 2=gtk_spaceend, 3=windows
+
+  #fixes:
+  jberenguer - modified send_key function so that keystrokes work for remote terminals
+
 */
 #include <stdio.h>
 #include <stdlib.h>
@@ -93,11 +97,11 @@ fclose (hid_dev);
 		}
 		if (l->key != 0x00) {
 			send_key(hid_dev, l->key, l->mod);
-			send_key(hid_dev, '\0', '\0'); //release all keys
+			//send_key(hid_dev, '\0', '\0'); //release all keys
 			if (l->is_dead) {
 				//dead keys need to be pressed twice to show up
 				send_key(hid_dev, l->key, l->mod);
-				send_key(hid_dev, '\0', '\0'); //release all keys
+				//send_key(hid_dev, '\0', '\0'); //release all keys
 			}
 		} else {
 			//key does not exist in this layout, use unicode method
@@ -111,7 +115,13 @@ fclose (hid_dev);
 }
 
 void send_key (FILE* hid_dev, unsigned short key, unsigned short mod) {
+	// these changes ensure that the keystrokes sent 
+	// to a remote terminal are pressed accordingly
+	fprintf (hid_dev, "%c%c%c%c%c%c%c%c", mod, '\0', '\0', '\0', '\0', '\0', '\0', '\0');
+	fprintf (hid_dev, "%c%c%c%c%c%c%c%c", mod, '\0', '\0', '\0', '\0', '\0', '\0', '\0');
 	fprintf (hid_dev, "%c%c%c%c%c%c%c%c", mod, '\0', key, '\0', '\0', '\0', '\0', '\0');
+	fprintf (hid_dev, "%c%c%c%c%c%c%c%c", '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0');
+	fprintf (hid_dev, "%c%c%c%c%c%c%c%c", '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0');
 }
 
 enum errors send_unicode (FILE* hid_dev, unsigned int unicode, enum uni_m method, enum kbdl layout) {
@@ -160,3 +170,4 @@ enum errors send_unicode (FILE* hid_dev, unsigned int unicode, enum uni_m method
 	}
 	return ERR_SUCCESS;
 }
+
